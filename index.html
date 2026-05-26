@@ -231,7 +231,7 @@ function renderList(customers, newOrgs=[]) {
     const hsRaw = String(c.hs || '').trim().toUpperCase();
     const hs = hsRaw === 'YES';
     const hsClass = hs ? 'hs-yes' : 'hs-no';
-    const hsLabel = hs ? 'YES' : '—';
+    const hsLabel = hs ? 'YES' : 'NO';
     item.innerHTML = '<div class="item-name">' + c.first + ' ' + c.last + '</div>' +
       '<div class="item-org">' + c.org + '</div>' +
       '<div class="item-date">' + formatDate(c.date) + '</div>' +
