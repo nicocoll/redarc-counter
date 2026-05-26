@@ -299,7 +299,8 @@
 // ─────────────────────────────────────────────────────────────
 
 const POLL_INTERVAL = 30000;   // 30 seconds
-const DATA_URL = 'https://raw.githubusercontent.com/nicocoll/redarc-counter/main/data.json';
+const DATA_URL = 'https://api.github.com/repos/nicocoll/redarc-counter/contents/data.json';
+
 // ─────────────────────────────────────────────────────────────
 
 let currentCount  = null;   // null = not yet loaded
@@ -422,9 +423,14 @@ function timeNow() {
 async function poll() {
   try {
     // cache-bust so GitHub Pages serves the latest file, not a cached copy
-    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    const res = await fetch(DATA_URL, {
+      headers: { 'Accept': 'application/vnd.github.v3+json', 'Cache-Control': 'no-cache' }
+    });
     if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
+    const ghData = await res.json();
+    // GitHub API returns file content as base64
+    const decoded = atob(ghData.content.replace(/\n/g, ''));
+    const data = JSON.parse(decoded);
 
     const newCount = parseInt(data.count ?? 0);
 
