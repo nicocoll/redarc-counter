@@ -33,10 +33,10 @@
   .wordmark-text { font-family: 'Azeret Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
   .wordmark-text span { color: var(--red); }
 
-  .layout { position: relative; z-index: 2; width: 100%; height: 100vh; display: grid; grid-template-columns: 1fr 1px 460px; padding-top: 64px; }
+  .layout { position: relative; z-index: 2; width: 100%; height: 100vh; display: grid; grid-template-columns: 1fr 1px 480px; padding-top: 64px; overflow: hidden; }
 
   /* ── left ── */
-  .left { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+  .left { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; min-width: 0; }
   .label-top { font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; text-transform: uppercase; color: var(--red); display: flex; align-items: center; gap: 10px; margin-bottom: 2.5rem; opacity: 0; animation: fadeUp .7s .3s ease forwards; }
   .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); animation: blink 2.2s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 8px var(--red)} 50%{opacity:.3;box-shadow:none} }
@@ -62,21 +62,25 @@
   .vdivider { background: var(--border); align-self: stretch; }
 
   /* ── right ── */
-  .right { display:flex; flex-direction:column; height:100%; overflow:hidden; opacity:0; animation:fadeUp .7s 1s ease forwards; }
-  .list-header { padding:1.25rem 1.5rem 1rem; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+  .right { display:flex; flex-direction:column; height:100%; overflow:hidden; opacity:0; animation:fadeUp .7s 1s ease forwards; min-width:0; }
+  .list-header { padding:1.25rem 1.5rem 1rem; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
   .list-title { font-family:'Azeret Mono',monospace; font-size:9px; font-weight:300; letter-spacing:.25em; text-transform:uppercase; color:var(--red); }
   .list-count { font-family:'Azeret Mono',monospace; font-size:9px; font-weight:300; color:var(--muted); }
 
   /* column headers */
-  .list-cols { display:grid; grid-template-columns: 1fr 1.6fr 60px 72px; gap:0 .75rem; padding:.6rem 1.5rem; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .col-hdr { font-family:'Azeret Mono',monospace; font-size:8px; font-weight:300; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+  .list-cols { display:grid; grid-template-columns: 1fr 1.6fr 52px 56px; gap:0 .5rem; padding:.6rem 1.5rem; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .col-hdr { font-family:'Azeret Mono',monospace; font-size:7.5px; font-weight:300; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); cursor:pointer; user-select:none; display:flex; align-items:center; gap:4px; transition:color .2s; white-space:nowrap; }
+  .col-hdr:hover { color:rgba(255,255,255,0.5); }
+  .col-hdr.active { color:var(--red); }
+  .col-hdr .sort-arrow { opacity:0; font-size:8px; transition:opacity .2s; }
+  .col-hdr.active .sort-arrow { opacity:1; }
+  .list-item { display:grid; grid-template-columns:1fr 1.6fr 52px 56px; gap:0 .5rem; align-items:center; padding:.6rem 1.5rem; border-bottom:1px solid rgba(255,73,82,0.05); transition:background .2s; }
 
   .list-scroll { flex:1; overflow-y:auto; padding:0; }
   .list-scroll::-webkit-scrollbar { width:3px; }
   .list-scroll::-webkit-scrollbar-track { background:transparent; }
   .list-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 
-  .list-item { display:grid; grid-template-columns:1fr 1.6fr 60px 72px; gap:0 .75rem; align-items:center; padding:.6rem 1.5rem; border-bottom:1px solid rgba(255,73,82,0.05); transition:background .2s; }
   .list-item:hover { background:rgba(255,73,82,0.04); }
   .list-item.new-entry { animation:slideIn .5s ease; }
   @keyframes slideIn { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:translateX(0)} }
@@ -134,10 +138,10 @@
       <div class="list-count" id="listCount"></div>
     </div>
     <div class="list-cols">
-      <div class="col-hdr">contact</div>
-      <div class="col-hdr">organisation</div>
-      <div class="col-hdr">date</div>
-      <div class="col-hdr">hubspot</div>
+      <div class="col-hdr" data-sort="name">contact <span class="sort-arrow">↕</span></div>
+      <div class="col-hdr" data-sort="org">organisation <span class="sort-arrow">↕</span></div>
+      <div class="col-hdr" data-sort="date">date <span class="sort-arrow">↕</span></div>
+      <div class="col-hdr" data-sort="hs">hs <span class="sort-arrow">↕</span></div>
     </div>
     <div class="list-scroll" id="listScroll"></div>
   </div>
@@ -192,22 +196,64 @@ function formatDate(d) {
   const [y,m,day]=d.split('-');
   return `${parseInt(day)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]}`;
 }
+let sortKey = 'date';
+let sortDir = 1; // 1 = asc, -1 = desc
+
+function sortCustomers(customers) {
+  return [...customers].sort((a, b) => {
+    let av, bv;
+    if (sortKey === 'name')  { av = (a.first+' '+a.last).toLowerCase(); bv = (b.first+' '+b.last).toLowerCase(); }
+    if (sortKey === 'org')   { av = a.org.toLowerCase(); bv = b.org.toLowerCase(); }
+    if (sortKey === 'date')  { av = a.date; bv = b.date; }
+    if (sortKey === 'hs')    { av = String(a.hs||'').trim().toUpperCase(); bv = String(b.hs||'').trim().toUpperCase(); }
+    if (av < bv) return -1 * sortDir;
+    if (av > bv) return 1 * sortDir;
+    return 0;
+  });
+}
+
+function updateSortHeaders() {
+  document.querySelectorAll('.col-hdr').forEach(h => {
+    const isActive = h.dataset.sort === sortKey;
+    h.classList.toggle('active', isActive);
+    const arrow = h.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = isActive ? (sortDir === 1 ? '↑' : '↓') : '↕';
+  });
+}
+
 function renderList(customers, newOrgs=[]) {
   const scroll=document.getElementById('listScroll');
   scroll.innerHTML='';
-  customers.forEach(c=>{
+  const sorted = sortCustomers(customers);
+  sorted.forEach(c=>{
     const item=document.createElement('div');
     item.className='list-item'+(newOrgs.includes(c.org)?' new-entry':'');
-    const hs=(c.hs||'').trim().toUpperCase()==='YES';
-    const hsClass=hs?'hs-yes':'hs-no';
-    item.innerHTML=`
-      <div class="item-name">${c.first} ${c.last}</div>
-      <div class="item-org">${c.org}</div>
-      <div class="item-date">${formatDate(c.date)}</div>
-      <div class="item-hs"><span class="hs-badge ${hsClass}">${hs?'HS':'—'}</span></div>`;
+    const hsRaw = String(c.hs || '').trim().toUpperCase();
+    const hs = hsRaw === 'YES';
+    const hsClass = hs ? 'hs-yes' : 'hs-no';
+    const hsLabel = hs ? 'YES' : '—';
+    item.innerHTML = '<div class="item-name">' + c.first + ' ' + c.last + '</div>' +
+      '<div class="item-org">' + c.org + '</div>' +
+      '<div class="item-date">' + formatDate(c.date) + '</div>' +
+      '<div class="item-hs"><span class="hs-badge ' + hsClass + '">' + hsLabel + '</span></div>';
     scroll.appendChild(item);
   });
   document.getElementById('listCount').textContent=customers.length+' total';
+}
+
+function initSortHeaders() {
+  document.querySelectorAll('.col-hdr[data-sort]').forEach(h => {
+    h.addEventListener('click', () => {
+      const key = h.dataset.sort;
+      if (sortKey === key) sortDir *= -1;
+      else { sortKey = key; sortDir = key === 'date' ? -1 : 1; }
+      updateSortHeaders();
+      renderList(currentCustomers);
+    });
+  });
+  // default: date descending (newest first)
+  sortKey = 'date'; sortDir = -1;
+  updateSortHeaders();
 }
 function setPill(msg,red){const p=document.getElementById('pill');p.textContent=msg;p.classList.toggle('live',!!red);}
 function timeNow(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
@@ -237,6 +283,7 @@ async function poll() {
 }
 
 buildSlots(3); renderCount(0); setPill('connecting…');
+initSortHeaders();
 
 
 poll(); setInterval(poll,POLL_INTERVAL);
