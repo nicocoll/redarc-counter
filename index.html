@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RedArc — Connected Apps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:      #ff4952;
+    --red-dim:  rgba(255,73,82,0.1);
+    --red-glow: rgba(255,73,82,0.05);
+    --bg:       #0a0808;
+    --bg2:      #130d0d;
+    --border:   rgba(255,73,82,0.13);
+    --muted:    rgba(255,255,255,0.22);
+    --mid:      rgba(255,255,255,0.48);
+    --bright:   rgba(255,255,255,0.92);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: var(--bg); font-family: 'DM Sans', sans-serif; overflow: hidden; color: var(--bright); }
+
+  .grid {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,73,82,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,73,82,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .ambient {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse 65% 55% at 50% 54%, rgba(255,73,82,0.06) 0%, transparent 68%);
+  }
+
+  .scanline {
+    position: fixed; left: 0; right: 0; height: 2px; pointer-events: none; z-index: 1;
+    background: linear-gradient(90deg, transparent, rgba(255,73,82,0.2), transparent);
+    animation: scan 7s linear infinite;
+  }
+  @keyframes scan {
+    0%   { top: -2px; opacity: 0; }
+    4%   { opacity: 1; }
+    96%  { opacity: 1; }
+    100% { top: 100vh; opacity: 0; }
+  }
+
+  /* ── corner brackets ── */
+  .corner { position: fixed; width: 20px; height: 20px; pointer-events: none; z-index: 3; }
+  .corner svg { width: 100%; height: 100%; }
+  .corner.tl { top: 22px; left: 22px; }
+  .corner.tr { top: 22px; right: 22px; transform: scaleX(-1); }
+  .corner.bl { bottom: 22px; left: 22px; transform: scaleY(-1); }
+  .corner.br { bottom: 22px; right: 22px; transform: scale(-1); }
+
+  /* ── wordmark ── */
+  .wordmark {
+    position: fixed; top: 22px; left: 50%; transform: translateX(-50%);
+    z-index: 5; display: flex; align-items: center; gap: 9px;
+    opacity: 0; animation: fadeUp 0.7s 0.1s ease forwards;
+  }
+  .wordmark-arc {
+    width: 26px; height: 26px;
+  }
+  .wordmark-text {
+    font-family: 'Azeret Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--bright);
+  }
+  .wordmark-text span { color: var(--red); }
+
+  /* ── main stage ── */
+  .stage {
+    position: relative; z-index: 2;
+    width: 100%; height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+
+  .label-top {
+    font-family: 'Azeret Mono', monospace;
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--red);
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 2.75rem;
+    opacity: 0; animation: fadeUp 0.7s 0.3s ease forwards;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red);
+    animation: blink 2.2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; box-shadow: 0 0 8px var(--red); }
+    50%      { opacity: 0.3; box-shadow: none; }
+  }
+
+  /* ── digit counter ── */
+  .counter-row {
+    display: flex; align-items: center; gap: 5px;
+    opacity: 0; animation: fadeUp 0.7s 0.5s ease forwards;
+  }
+
+  .digit-block {
+    position: relative; width: 108px; height: 144px;
+    overflow: hidden;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .digit-block::before,
+  .digit-block::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 40px;
+    z-index: 2; pointer-events: none;
+  }
+  .digit-block::before { top: 0; background: linear-gradient(to bottom, var(--bg2) 10%, transparent); }
+  .digit-block::after  { bottom: 0; background: linear-gradient(to top, var(--bg2) 10%, transparent); }
+
+  .d-line {
+    position: absolute; top: 50%; left: 14px; right: 14px;
+    height: 1px; background: var(--red); opacity: 0.18; z-index: 3;
+    transform: translateY(-50%);
+  }
+
+  .reel {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.65s cubic-bezier(0.23, 1.04, 0.32, 1);
+    will-change: transform;
+  }
+
+  .d-face {
+    width: 100%; height: 144px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Azeret Mono', monospace;
+    font-size: 84px; font-weight: 800;
+    color: var(--bright); line-height: 1;
+  }
+
+  .sep {
+    font-family: 'Azeret Mono', monospace;
+    font-size: 52px; font-weight: 300;
+    color: var(--red); opacity: 0.3;
+    margin-bottom: 10px; line-height: 1; align-self: flex-end;
+  }
+
+  .label-bottom {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px; font-weight: 300;
+    color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase;
+    margin-top: 1.75rem;
+    opacity: 0; animation: fadeUp 0.7s 0.65s ease forwards;
+  }
+
+  /* ── divider ── */
+  .rule {
+    width: 1px; height: 44px;
+    background: linear-gradient(to bottom, transparent, var(--border), transparent);
+    margin: 1.75rem 0;
+    opacity: 0; animation: fadeUp 0.7s 0.75s ease forwards;
+  }
+
+  /* ── stats ── */
+  .stats {
+    display: flex; align-items: stretch;
+    opacity: 0; animation: fadeUp 0.7s 0.85s ease forwards;
+  }
+  .stat {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 0 2.25rem;
+  }
+  .stat + .stat { border-left: 1px solid var(--border); }
+  .stat-val {
+    font-family: 'Azeret Mono', monospace;
+    font-size: 20px; font-weight: 700; color: var(--bright);
+  }
+  .stat-lbl {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px; font-weight: 300;
+    color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase;
+  }
+
+  /* ── activity bars ── */
+  .activity {
+    display: flex; align-items: flex-end; gap: 3px;
+    height: 32px; margin-top: 2.25rem;
+    opacity: 0; animation: fadeUp 0.7s 0.95s ease forwards;
+  }
+  .bar {
+    width: 5px; border-radius: 2px;
+    background: var(--red-dim);
+    transition: height 0.5s ease, background 0.3s;
+    min-height: 4px;
+  }
+  .bar.lit  { background: rgba(255,73,82,0.38); }
+  .bar.peak { background: var(--red); box-shadow: 0 0 6px rgba(255,73,82,0.5); }
+
+  /* ── footer pill ── */
+  .footer {
+    position: fixed; bottom: 24px; left: 0; right: 0;
+    display: flex; justify-content: center; z-index: 5;
+  }
+  .pill {
+    font-family: 'Azeret Mono', monospace;
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(19,13,13,0.8);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 20px;
+    backdrop-filter: blur(10px);
+    transition: color 0.4s;
+  }
+  .pill.live { color: var(--red); }
+
+  /* ── flash ── */
+  @keyframes flash {
+    0%   { opacity: 1; }
+    25%  { opacity: 0.35; }
+    100% { opacity: 1; }
+  }
+  .flash { animation: flash 0.45s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid"></div>
+<div class="ambient"></div>
+<div class="scanline"></div>
+
+<!-- RedArc wordmark -->
+<div class="wordmark">
+  <svg class="wordmark-arc" viewBox="0 0 26 26" fill="none">
+    <circle cx="13" cy="13" r="11" stroke="#ff4952" stroke-width="1.5" stroke-dasharray="3 2.5" opacity="0.4"/>
+    <circle cx="13" cy="13" r="5.5" fill="#ff4952" opacity="0.9"/>
+    <circle cx="13" cy="13" r="2" fill="white" opacity="0.9"/>
+  </svg>
+  <div class="wordmark-text">Red<span>Arc</span></div>
+</div>
+
+<!-- corner brackets -->
+<div class="corner tl"><svg viewBox="0 0 20 20" fill="none"><path d="M1 12V1H12" stroke="rgba(255,73,82,0.28)" stroke-width="1"/></svg></div>
+<div class="corner tr"><svg viewBox="0 0 20 20" fill="none"><path d="M1 12V1H12" stroke="rgba(255,73,82,0.28)" stroke-width="1"/></svg></div>
+<div class="corner bl"><svg viewBox="0 0 20 20" fill="none"><path d="M1 12V1H12" stroke="rgba(255,73,82,0.28)" stroke-width="1"/></svg></div>
+<div class="corner br"><svg viewBox="0 0 20 20" fill="none"><path d="M1 12V1H12" stroke="rgba(255,73,82,0.28)" stroke-width="1"/></svg></div>
+
+<div class="stage">
+  <div class="label-top">
+    <span class="live-dot"></span>
+    organisations connected
+  </div>
+
+  <div class="counter-row" id="counterRow"></div>
+
+  <div class="label-bottom">total connected apps</div>
+
+  <div class="rule"></div>
+
+  <div class="stats">
+    <div class="stat" style="padding:0">
+      <span class="stat-val" id="statTime">—</span>
+      <span class="stat-lbl">last updated</span>
+    </div>
+  </div>
+
+  <div class="activity" id="activityBar"></div>
+</div>
+
+<div class="footer">
+  <div class="pill" id="pill">initialising…</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  HOW THIS WORKS WITH GITHUB PAGES
+//
+//  1. This index.html lives in your GitHub repo root (or /docs)
+//  2. A second file  data.json  lives in the same repo:
+//       { "count": 47 }
+//  3. Make.com HTTP module does a PUT to the GitHub Contents API
+//     to update data.json whenever a new app connects.
+//     (Instructions at bottom of this file)
+//
+//  The page fetches data.json every POLL_INTERVAL milliseconds.
+//  Because GitHub Pages serves static files, this is instant,
+//  free, and requires zero backend.
+// ─────────────────────────────────────────────────────────────
+
+const POLL_INTERVAL = 30000;   // 30 seconds
+const DATA_URL      = './data.json';   // same repo, relative path
+
+// ─────────────────────────────────────────────────────────────
+
+let currentCount  = null;   // null = not yet loaded
+let history       = [];
+const BAR_COUNT   = 26;
+let slotCount     = 0;
+
+// ── digit slots ──
+function buildSlots(n) {
+  const needed = Math.max(n, 3);
+  if (needed === slotCount) return;
+  slotCount = needed;
+  const row = document.getElementById('counterRow');
+  row.innerHTML = '';
+  for (let i = 0; i < needed; i++) {
+    if (i > 0 && (needed - i) % 3 === 0) {
+      const s = document.createElement('div');
+      s.className = 'sep'; s.textContent = ',';
+      row.appendChild(s);
+    }
+    const block = document.createElement('div');
+    block.className = 'digit-block';
+    const line = document.createElement('div'); line.className = 'd-line';
+    block.appendChild(line);
+    const reel = document.createElement('div');
+    reel.className = 'reel'; reel.id = 'reel' + i;
+    for (let d = 0; d <= 9; d++) {
+      const face = document.createElement('div');
+      face.className = 'd-face'; face.textContent = d;
+      reel.appendChild(face);
+    }
+    block.appendChild(reel);
+    row.appendChild(block);
+  }
+}
+
+function setDigit(i, d) {
+  const r = document.getElementById('reel' + i);
+  if (r) r.style.transform = `translateY(-${d * 144}px)`;
+}
+
+function renderCount(n) {
+  const str = String(Math.max(0, Math.round(n)));
+  const len = Math.max(str.length, 3);
+  buildSlots(len);
+  const padded = str.padStart(len, '0');
+  for (let i = 0; i < len; i++) setDigit(i, parseInt(padded[i]));
+}
+
+// ── animate number rolling up ──
+function animateTo(target) {
+  const start = currentCount ?? 0;
+  if (target === start && currentCount !== null) return;
+
+  const diff  = target - start;
+  const steps = Math.min(Math.abs(diff), 18);
+  if (steps === 0) { renderCount(target); currentCount = target; return; }
+
+  let step = 0;
+  const tick = () => {
+    step++;
+    const ease = step / steps;
+    const eased = ease < 0.5 ? 2*ease*ease : -1+(4-2*ease)*ease;
+    const val = Math.round(start + diff * eased);
+    renderCount(val);
+    if (step < steps) setTimeout(tick, 38);
+    else { currentCount = target; }
+  };
+  tick();
+}
+
+// ── activity bars ──
+function buildBars() {
+  const el = document.getElementById('activityBar');
+  el.innerHTML = '';
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const b = document.createElement('div');
+    b.className = 'bar';
+    b.style.height = (4 + Math.floor(Math.random() * 14)) + 'px';
+    el.appendChild(b);
+  }
+}
+
+function updateBars(count) {
+  history.push(count);
+  if (history.length > BAR_COUNT) history.shift();
+  const bars = document.querySelectorAll('.bar');
+  const max = Math.max(...history, 1);
+  bars.forEach((b, i) => {
+    const val = history[i] ?? 0;
+    const pct = val / max;
+    b.style.height = (4 + Math.round(pct * 28)) + 'px';
+    b.classList.remove('lit', 'peak');
+    if (i === history.length - 1) b.classList.add('peak');
+    else if (i < history.length)  b.classList.add('lit');
+  });
+}
+
+// ── flash on update ──
+function flashRow() {
+  const row = document.getElementById('counterRow');
+  row.classList.remove('flash');
+  void row.offsetWidth;
+  row.classList.add('flash');
+  row.addEventListener('animationend', () => row.classList.remove('flash'), { once: true });
+}
+
+// ── pill ──
+function setPill(msg, red) {
+  const p = document.getElementById('pill');
+  p.textContent = msg;
+  p.classList.toggle('live', !!red);
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ── fetch data.json ──
+async function poll() {
+  try {
+    // cache-bust so GitHub Pages serves the latest file, not a cached copy
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+
+    const newCount = parseInt(data.count ?? 0);
+
+
+    const changed = currentCount !== null && newCount !== currentCount;
+    if (changed) flashRow();
+
+    if (currentCount !== null && currentCount !== newCount) {
+    }
+
+    animateTo(newCount);
+    updateBars(newCount);
+
+    document.getElementById('statTime').textContent  = timeNow();
+
+    setPill(changed ? 'new connection detected · ' + timeNow() : 'live · last synced ' + timeNow(), true);
+    if (changed) setTimeout(() => setPill('live · synced ' + timeNow(), true), 4000);
+
+  } catch (err) {
+    setPill('data.json unreachable — check repo', false);
+    console.error('RedArc counter: fetch failed', err);
+  }
+}
+
+// ── init ──
+buildSlots(3);
+renderCount(0);
+buildBars();
+setPill('connecting to repo…');
+poll();
+setInterval(poll, POLL_INTERVAL);
+</script>
+
+<!--
+═══════════════════════════════════════════════════════════════
+  SETUP GUIDE
+═══════════════════════════════════════════════════════════════
+
+  STEP 1 — GitHub repo
+  ────────────────────
+  Create a new public GitHub repo, e.g. "redarc-counter"
+  Upload this file as: index.html
+  Create a second file:  data.json  with contents:
+    { "count": 0 }
+
+  Enable GitHub Pages:
+    Settings → Pages → Source: Deploy from branch → main → / (root)
+
+  Your page will be live at:
+    https://YOUR_USERNAME.github.io/redarc-counter/
+
+  STEP 2 — GitHub Personal Access Token
+  ──────────────────────────────────────
+  GitHub → Settings → Developer settings → Personal access tokens
+  → Fine-grained token → Only this repo → Contents: Read & Write
+  Copy the token (ghp_xxxx…)
+
+  STEP 3 — Make.com HTTP module
+  ──────────────────────────────
+  At the END of your existing app-connection scenario, add:
+
+  Module: HTTP → Make a request
+
+  URL:
+    https://api.github.com/repos/YOUR_USERNAME/redarc-counter/contents/data.json
+
+  Method: PUT
+
+  Headers:
+    Authorization:  Bearer ghp_YOUR_TOKEN_HERE
+    Content-Type:   application/json
+    X-GitHub-Api-Version: 2022-11-28
+
+  Body (raw JSON):
+    {
+      "message": "update count",
+      "content": "{{ base64('{ \"count\": ' + YOUR_COUNT_VARIABLE + ' }') }}",
+      "sha": "{{ ... }}"  ← see note below
+    }
+
+  ⚠️  SHA note: GitHub's Contents API requires the current file SHA
+  on every PUT (to prevent conflicts). You have two options:
+
+  Option A (simpler) — add a GET request BEFORE the PUT:
+    GET same URL, parse response body → sha field
+    Use that sha value in your PUT body.
+
+  Option B — use GitHub Actions instead:
+    Trigger a workflow_dispatch from Make instead of the Contents API.
+    The workflow runs a script that handles the SHA automatically.
+    Ask Nico or Claude for the workflow YAML if you want this route.
+
+  STEP 4 — Pin in Slack
+  ──────────────────────
+  Post the GitHub Pages URL in #general or a dedicated channel.
+  Pin it. Done.
+
+═══════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
