@@ -88,10 +88,10 @@
   .item-name { font-size:12px; font-weight:400; color:var(--bright); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .item-org  { font-size:11px; font-weight:300; color:rgba(255,255,255,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .item-date { font-family:'Azeret Mono',monospace; font-size:9px; font-weight:300; color:var(--muted); white-space:nowrap; }
-  .item-hs   { display:flex; align-items:center; justify-content:center; }
-  .hs-badge  { font-family:'Azeret Mono',monospace; font-size:8px; font-weight:700; letter-spacing:.1em; padding:2px 7px; border-radius:3px; }
-  .hs-yes { background:rgba(255,73,82,0.15); color:var(--red); border:1px solid rgba(255,73,82,0.3); }
-  .hs-no  { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.08); }
+  .item-   { display:flex; align-items:center; justify-content:center; }
+  .-badge  { font-family:'Azeret Mono',monospace; font-size:8px; font-weight:700; letter-spacing:.1em; padding:2px 7px; border-radius:3px; }
+  .-yes { background:rgba(255,73,82,0.15); color:var(--red); border:1px solid rgba(255,73,82,0.3); }
+  .-no  { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.08); }
 
   /* ── footer ── */
   .footer { position:fixed; bottom:24px; left:0; right:0; display:flex; justify-content:center; z-index:5; }
@@ -141,7 +141,7 @@
       <div class="col-hdr" data-sort="name">contact <span class="sort-arrow">↕</span></div>
       <div class="col-hdr" data-sort="org">organisation <span class="sort-arrow">↕</span></div>
       <div class="col-hdr" data-sort="date">date <span class="sort-arrow">↕</span></div>
-      <div class="col-hdr" data-sort="hs">hs <span class="sort-arrow">↕</span></div>
+      <div class="col-hdr" data-sort="hs">New Contact <span class="sort-arrow">↕</span></div>
     </div>
     <div class="list-scroll" id="listScroll"></div>
   </div>
