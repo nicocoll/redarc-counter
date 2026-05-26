@@ -119,7 +119,7 @@
 
 <div class="layout">
   <div class="left">
-    <div class="label-top"><span class="live-dot"></span>organisations connected</div>
+    <div class="label-top"><span class="live-dot"></span>Conexions to Red Arc Platform App</div>
     <div class="counter-row" id="counterRow"></div>
     <div class="label-bottom">total connected apps</div>
     <div class="rule"></div>
@@ -134,7 +134,7 @@
 
   <div class="right">
     <div class="list-header">
-      <div class="list-title">connected organisations</div>
+      <div class="list-title">connected users</div>
       <div class="list-count" id="listCount"></div>
     </div>
     <div class="list-cols">
@@ -213,12 +213,13 @@ function renderList(customers, newOrgs=[]) {
   customers.forEach(c=>{
     const item=document.createElement('div');
     item.className='list-item'+(newOrgs.includes(c.org)?' new-entry':'');
-    const hsClass=c.hs==='YES'?'hs-yes':'hs-no';
+    const hs=(c.hs||'').trim().toUpperCase()==='YES';
+    const hsClass=hs?'hs-yes':'hs-no';
     item.innerHTML=`
       <div class="item-name">${c.first} ${c.last}</div>
       <div class="item-org">${c.org}</div>
       <div class="item-date">${formatDate(c.date)}</div>
-      <div class="item-hs"><span class="hs-badge ${hsClass}">${c.hs==='YES'?'HS':'—'}</span></div>`;
+      <div class="item-hs"><span class="hs-badge ${hsClass}">${hs?'HS':'—'}</span></div>`;
     scroll.appendChild(item);
   });
   document.getElementById('listCount').textContent=customers.length+' total';
