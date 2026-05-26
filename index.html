@@ -356,7 +356,7 @@ function animateTo(target) {
   if (target === start && currentCount !== null) return;
 
   const diff  = target - start;
-  const steps = Math.min(Math.abs(diff), 18);
+  const steps = Math.min(Math.abs(diff), 30);
   if (steps === 0) { renderCount(target); currentCount = target; return; }
 
   let step = 0;
@@ -366,7 +366,7 @@ function animateTo(target) {
     const eased = ease < 0.5 ? 2*ease*ease : -1+(4-2*ease)*ease;
     const val = Math.round(start + diff * eased);
     renderCount(val);
-    if (step < steps) setTimeout(tick, 38);
+    if (step < steps) setTimeout(tick, 80);
     else { currentCount = target; }
   };
   tick();
