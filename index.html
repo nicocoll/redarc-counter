@@ -424,7 +424,7 @@ async function poll() {
   try {
     // cache-bust so GitHub Pages serves the latest file, not a cached copy
     const res = await fetch(DATA_URL, {
-      headers: { 'Accept': 'application/vnd.github.v3+json', 'Cache-Control': 'no-cache' }
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
     });
     if (!res.ok) throw new Error(res.status);
     const ghData = await res.json();
