@@ -230,12 +230,12 @@ function renderList(customers, newOrgs=[]) {
     item.className='list-item'+(newOrgs.includes(c.org)?' new-entry':'');
     const hsRaw = String(c.hs || '').trim().toUpperCase();
     const hs = hsRaw === 'YES';
-    const hsClass = hs ? 'hs-yes' : 'hs-no';
+    const hsClass = hs ? '-yes' : '-no';
     const hsLabel = hs ? 'YES' : 'NO';
     item.innerHTML = '<div class="item-name">' + c.first + ' ' + c.last + '</div>' +
       '<div class="item-org">' + c.org + '</div>' +
       '<div class="item-date">' + formatDate(c.date) + '</div>' +
-      '<div class="item-hs"><span class="hs-badge ' + hsClass + '">' + hsLabel + '</span></div>';
+      '<div class="item-hs"><span class="-badge ' + hsClass + '">' + hsLabel + '</span></div>';
     scroll.appendChild(item);
   });
   document.getElementById('listCount').textContent=customers.length+' total';
