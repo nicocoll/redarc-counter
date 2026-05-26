@@ -56,10 +56,7 @@
   .stat { display:flex; flex-direction:column; align-items:center; gap:6px; opacity:0; animation:fadeUp .7s .85s ease forwards; }
   .stat-val { font-family:'Azeret Mono',monospace; font-size:20px; font-weight:700; }
   .stat-lbl { font-size:10px; font-weight:300; color:var(--muted); letter-spacing:.16em; text-transform:uppercase; }
-  .activity { display:flex; align-items:flex-end; gap:3px; height:32px; margin-top:2rem; opacity:0; animation:fadeUp .7s .95s ease forwards; }
-  .bar { width:5px; border-radius:2px; background:var(--red-dim); transition:height .5s ease,background .3s; min-height:4px; }
-  .bar.lit  { background:rgba(255,73,82,.38); }
-  .bar.peak { background:var(--red); box-shadow:0 0 6px rgba(255,73,82,.5); }
+
 
   /* ── divider ── */
   .vdivider { background: var(--border); align-self: stretch; }
@@ -119,7 +116,7 @@
 
 <div class="layout">
   <div class="left">
-    <div class="label-top"><span class="live-dot"></span>Conexions to Red Arc Platform App</div>
+    <div class="label-top"><span class="live-dot"></span>organisations connected</div>
     <div class="counter-row" id="counterRow"></div>
     <div class="label-bottom">total connected apps</div>
     <div class="rule"></div>
@@ -127,14 +124,13 @@
       <span class="stat-val" id="statTime">—</span>
       <span class="stat-lbl">last updated</span>
     </div>
-    <div class="activity" id="activityBar"></div>
   </div>
 
   <div class="vdivider"></div>
 
   <div class="right">
     <div class="list-header">
-      <div class="list-title">connected users</div>
+      <div class="list-title">connected organisations</div>
       <div class="list-count" id="listCount"></div>
     </div>
     <div class="list-cols">
@@ -155,8 +151,6 @@ const POLL_INTERVAL = 30000;
 
 let currentCount = null;
 let currentCustomers = [];
-let history = [];
-const BAR_COUNT = 26;
 let slotCount = 0;
 
 function buildSlots(n) {
@@ -188,15 +182,6 @@ function animateTo(target) {
   let step=0;
   const tick=()=>{ step++; const e=step/steps; const eased=e<0.5?2*e*e:-1+(4-2*e)*e; renderCount(Math.round(start+diff*eased)); if(step<steps) setTimeout(tick,80); else currentCount=target; };
   tick();
-}
-function buildBars() {
-  const el=document.getElementById('activityBar'); el.innerHTML='';
-  for(let i=0;i<BAR_COUNT;i++){const b=document.createElement('div');b.className='bar';b.style.height=(4+Math.floor(Math.random()*14))+'px';el.appendChild(b);}
-}
-function updateBars(count) {
-  history.push(count); if(history.length>BAR_COUNT) history.shift();
-  const bars=document.querySelectorAll('.bar'); const max=Math.max(...history,1);
-  bars.forEach((b,i)=>{const val=history[i]??0;b.style.height=(4+Math.round((val/max)*28))+'px';b.classList.remove('lit','peak');if(i===history.length-1)b.classList.add('peak');else if(i<history.length)b.classList.add('lit');});
 }
 function flashRow() {
   const row=document.getElementById('counterRow');
@@ -240,7 +225,7 @@ async function poll() {
     const newOrgs=customers.filter(c=>!prevOrgs.has(c.org)).map(c=>c.org);
     const changed=currentCount!==null&&newCount!==currentCount;
     if(changed) flashRow();
-    animateTo(newCount); updateBars(newCount); renderList(customers,newOrgs);
+    animateTo(newCount); renderList(customers,newOrgs);
     currentCustomers=customers;
     document.getElementById('statTime').textContent=timeNow();
     setPill(changed?'new connection detected · '+timeNow():'live · synced '+timeNow(),true);
@@ -251,7 +236,9 @@ async function poll() {
   }
 }
 
-buildSlots(3); renderCount(0); buildBars(); setPill('connecting…');
+buildSlots(3); renderCount(0); setPill('connecting…');
+
+
 poll(); setInterval(poll,POLL_INTERVAL);
 </script>
 </body>
